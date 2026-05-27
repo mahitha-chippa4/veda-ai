@@ -93,7 +93,7 @@ Ensure the answerKey array contains the answers for ALL questions in the paper, 
 
 export async function generateExamPaper(input: GenerationInput): Promise<GeneratedPaperData> {
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-flash-latest',
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.7,
