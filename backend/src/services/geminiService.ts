@@ -60,30 +60,40 @@ Return ONLY valid JSON (no markdown, no explanation) matching this exact schema:
   "class": "${input.class}",
   "totalMarks": ${totalMarks},
   "duration": "suggested duration in minutes",
-  "sections": [
+  "mcqs": [
     {
-      "title": "Section Name (e.g., Short Answer Questions)",
-      "instruction": "instruction for this section (e.g., Attempt all questions. Each question carries X marks)",
-      "questions": [
-        {
-          "question": "question text",
-          "type": "MCQ|Descriptive|TrueFalse|FillBlanks|ShortAnswer",
-          "difficulty": "easy|medium|hard",
-          "marks": number,
-          "options": ["A. option1", "B. option2", "C. option3", "D. option4"],
-          "answer": "correct answer or model answer"
-        }
-      ]
+      "question": "question text",
+      "type": "MCQ",
+      "difficulty": "easy|medium|hard",
+      "marks": number,
+      "options": ["A. option1", "B. option2", "C. option3", "D. option4"]
     }
-  ]
+  ],
+  "shortQuestions": [
+    {
+      "question": "question text",
+      "type": "ShortAnswer",
+      "difficulty": "easy|medium|hard",
+      "marks": number
+    }
+  ],
+  "longQuestions": [
+    {
+      "question": "question text",
+      "type": "Descriptive",
+      "difficulty": "easy|medium|hard",
+      "marks": number
+    }
+  ],
+  "answerKey": ["1. correct answer", "2. model answer", "3. detailed explanation"]
 }
 
-Group questions by type into separate sections labeled as Section A, Section B, etc. Each section should have a clear title and instruction.`;
+Ensure the answerKey array contains the answers for ALL questions in the paper, in the exact order they appear.`;
 }
 
 export async function generateExamPaper(input: GenerationInput): Promise<GeneratedPaperData> {
   const model = genAI.getGenerativeModel({
-    model: 'gemini-3.5-flash',
+    model: 'gemini-1.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.7,
@@ -115,6 +125,7 @@ export async function generateExamPaper(input: GenerationInput): Promise<Generat
     }
   }
 
+  console.log("Gemini API called");
   const result = await model.generateContent(reqParts);
   const text = result.response.text();
 
@@ -130,13 +141,9 @@ export async function generateExamPaper(input: GenerationInput): Promise<Generat
   const validated = GeneratedPaperSchema.parse(parsed);
 
   // Add IDs to questions
-  validated.sections = validated.sections.map((section, si) => ({
-    ...section,
-    questions: section.questions.map((q, qi) => ({
-      ...q,
-      id: `q-${si + 1}-${qi + 1}`,
-    })),
-  }));
+  validated.mcqs = validated.mcqs.map((q, i) => ({ ...q, id: `mcq-${i + 1}` }));
+  validated.shortQuestions = validated.shortQuestions.map((q, i) => ({ ...q, id: `short-${i + 1}` }));
+  validated.longQuestions = validated.longQuestions.map((q, i) => ({ ...q, id: `long-${i + 1}` }));
 
   return validated;
 }

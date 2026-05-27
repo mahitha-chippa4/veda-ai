@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -125,6 +125,7 @@ export default function CreateAssignmentPage() {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const submitLock = useRef(false);
 
   const {
     register,
@@ -175,6 +176,8 @@ export default function CreateAssignmentPage() {
   };
 
   const onSubmit = async (data: FormData) => {
+    if (submitLock.current) return;
+    submitLock.current = true;
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -196,6 +199,8 @@ export default function CreateAssignmentPage() {
     } catch (err: any) {
       setSubmitError(err.message || 'Failed to create assignment');
       setIsSubmitting(false);
+    } finally {
+      submitLock.current = false;
     }
   };
 

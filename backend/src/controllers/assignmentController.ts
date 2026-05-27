@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import { Assignment } from '../models/Assignment';
 import { GeneratedPaper } from '../models/GeneratedPaper';
 import { questionQueue } from '../queues';
@@ -14,22 +15,66 @@ export async function createAssignment(req: AuthRequest, res: Response, next: Ne
 
     const syllabusFile = (req.file as Express.Multer.File)?.path;
 
+    const parsedQuestionTypes = typeof questionTypes === 'string' ? JSON.parse(questionTypes) : questionTypes;
+    const chaptersArray = Array.isArray(chapters) ? chapters : (chapters ? [chapters] : []);
+
+    const hashData = {
+      title, class: className, subject, chapters: chaptersArray, 
+      questionTypes: parsedQuestionTypes, additionalInstructions, syllabusFileOriginalName: req.file?.originalname
+    };
+    const settingsHash = crypto.createHash('sha256').update(JSON.stringify(hashData)).digest('hex');
+
     const assignment = new Assignment({
       title,
       class: className,
       section,
       subject,
       schoolName: schoolName || '',
-      chapters: Array.isArray(chapters) ? chapters : (chapters ? [chapters] : []),
+      chapters: chaptersArray,
       dueDate: dueDate ? new Date(dueDate) : undefined,
-      questionTypes: typeof questionTypes === 'string' ? JSON.parse(questionTypes) : questionTypes,
+      questionTypes: parsedQuestionTypes,
       additionalInstructions,
       syllabusFile,
+      settingsHash,
       status: 'pending',
       userId: req.user?.id,
     });
 
     await assignment.save();
+
+    // Check for cached paper
+    const existingAssignment = await Assignment.findOne({ settingsHash, status: 'completed' });
+    if (existingAssignment && !syllabusFile) { // only use cache if no new custom syllabus file
+      const existingPaper = await GeneratedPaper.findOne({ assignmentId: existingAssignment._id });
+      if (existingPaper) {
+        const newPaper = new GeneratedPaper({
+          assignmentId: assignment._id,
+          userId: req.user?.id,
+          title: existingPaper.title,
+          subject: existingPaper.subject,
+          class: existingPaper.class,
+          schoolName: assignment.schoolName || existingPaper.schoolName,
+          totalMarks: existingPaper.totalMarks,
+          duration: existingPaper.duration,
+          mcqs: existingPaper.mcqs,
+          shortQuestions: existingPaper.shortQuestions,
+          longQuestions: existingPaper.longQuestions,
+          answerKey: existingPaper.answerKey,
+        });
+        await newPaper.save();
+
+        assignment.status = 'completed';
+        await assignment.save();
+
+        return res.status(201).json({
+          success: true,
+          data: {
+            assignment,
+            jobId: null,
+          },
+        });
+      }
+    }
 
     // Enqueue question generation job
     const job = await questionQueue.add('generate', { assignmentId: assignment._id.toString() }, {

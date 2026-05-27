@@ -30,7 +30,10 @@ export interface GeneratedPaper {
   schoolName?: string;
   totalMarks?: number;
   duration?: string;
-  sections: Section[];
+  mcqs: Question[];
+  shortQuestions: Question[];
+  longQuestions: Question[];
+  answerKey: string[];
   pdfUrl?: string;
   generatedAt?: string;
 }

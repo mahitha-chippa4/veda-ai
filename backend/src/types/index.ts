@@ -23,11 +23,13 @@ export const GeneratedPaperSchema = z.object({
   class: z.string().optional(),
   totalMarks: z.number().optional(),
   duration: z.string().optional(),
-  sections: z.array(SectionSchema),
+  mcqs: z.array(QuestionSchema).default([]),
+  shortQuestions: z.array(QuestionSchema).default([]),
+  longQuestions: z.array(QuestionSchema).default([]),
+  answerKey: z.array(z.string()).default([]),
 });
 
 export type Question = z.infer<typeof QuestionSchema>;
-export type Section = z.infer<typeof SectionSchema>;
 export type GeneratedPaperData = z.infer<typeof GeneratedPaperSchema>;
 
 export interface QuestionTypeInput {

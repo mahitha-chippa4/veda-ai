@@ -15,6 +15,7 @@ export interface IAssignment extends Document {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   jobId?: string;
   errorMessage?: string;
+  settingsHash?: string;
   userId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -44,6 +45,7 @@ const AssignmentSchema = new Schema<IAssignment>({
   },
   jobId: { type: String },
   errorMessage: { type: String },
+  settingsHash: { type: String, index: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 }, { timestamps: true });
 

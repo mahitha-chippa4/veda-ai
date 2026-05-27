@@ -9,10 +9,10 @@ interface ExamPaperProps {
 
 export function ExamPaper({ paper }: ExamPaperProps) {
   const schoolName = paper.schoolName || 'VedaAI School';
+  const allQuestions = [...(paper.mcqs || []), ...(paper.shortQuestions || []), ...(paper.longQuestions || [])];
   const totalMarks =
     paper.totalMarks ||
-    paper.sections.flatMap((s) => s.questions).reduce((sum, q) => sum + (q.marks || 0), 0);
-  const allQuestions = paper.sections.flatMap((s) => s.questions);
+    allQuestions.reduce((sum, q) => sum + (q.marks || 0), 0);
 
   return (
     <div
@@ -124,31 +124,31 @@ export function ExamPaper({ paper }: ExamPaperProps) {
         </div>
 
         {/* ── Sections ── */}
-        {paper.sections.map((section, sIdx) => {
-          const sectionLetter = String.fromCharCode(65 + sIdx);
-          const questionOffset = paper.sections
-            .slice(0, sIdx)
-            .reduce((sum, s) => sum + s.questions.length, 0);
+        {(() => {
+          let questionOffset = 0;
+          let sectionIndex = 0;
+          const renderSection = (title: string, questions: any[]) => {
+            if (!questions || questions.length === 0) return null;
+            const sectionLetter = String.fromCharCode(65 + sectionIndex);
+            sectionIndex++;
+            const startOffset = questionOffset;
+            questionOffset += questions.length;
 
-          return (
-            <div key={sIdx} style={{ marginBottom: 28 }}>
-              {/* Section Label */}
-              <h2
-                style={{
-                  textAlign: 'center',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: '#1A1A1A',
-                  marginBottom: 6,
-                  fontFamily: '"Times New Roman", Times, serif',
-                }}
-              >
-                Section {sectionLetter}
-              </h2>
-
-              {/* Section title + instruction */}
-              <div style={{ marginBottom: 10 }}>
-                {section.title && (
+            return (
+              <div key={title} style={{ marginBottom: 28 }}>
+                <h2
+                  style={{
+                    textAlign: 'center',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: '#1A1A1A',
+                    marginBottom: 6,
+                    fontFamily: '"Times New Roman", Times, serif',
+                  }}
+                >
+                  Section {sectionLetter}
+                </h2>
+                <div style={{ marginBottom: 10 }}>
                   <p
                     style={{
                       fontSize: 14,
@@ -158,37 +158,30 @@ export function ExamPaper({ paper }: ExamPaperProps) {
                       fontFamily: '"Times New Roman", Times, serif',
                     }}
                   >
-                    {section.title}
+                    {title}
                   </p>
-                )}
-                {section.instruction && (
-                  <p
-                    style={{
-                      fontSize: 13,
-                      fontStyle: 'italic',
-                      color: '#6B7280',
-                      marginBottom: 8,
-                      fontFamily: '"Times New Roman", Times, serif',
-                    }}
-                  >
-                    {section.instruction}
-                  </p>
-                )}
+                </div>
+                <ol style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>
+                  {questions.map((q, qIdx) => (
+                    <QuestionItem
+                      key={q.id || qIdx}
+                      question={q}
+                      number={startOffset + qIdx + 1}
+                    />
+                  ))}
+                </ol>
               </div>
+            );
+          };
 
-              {/* Questions */}
-              <ol style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>
-                {section.questions.map((q, qIdx) => (
-                  <QuestionItem
-                    key={q.id || qIdx}
-                    question={q}
-                    number={questionOffset + qIdx + 1}
-                  />
-                ))}
-              </ol>
-            </div>
+          return (
+            <>
+              {renderSection('Multiple Choice Questions', paper.mcqs)}
+              {renderSection('Short Answer Questions', paper.shortQuestions)}
+              {renderSection('Long Answer Questions', paper.longQuestions)}
+            </>
           );
-        })}
+        })()}
 
         {/* ── End of Paper ── */}
         <p
@@ -205,7 +198,7 @@ export function ExamPaper({ paper }: ExamPaperProps) {
         </p>
 
         {/* ── Answer Key ── */}
-        {allQuestions.some((q) => q.answer) && (
+        {paper.answerKey && paper.answerKey.length > 0 && (
           <div
             style={{
               marginTop: 8,
@@ -225,22 +218,20 @@ export function ExamPaper({ paper }: ExamPaperProps) {
               Answer Key:
             </h3>
             <ol style={{ listStyle: 'none', paddingLeft: 0 }}>
-              {allQuestions.map((q, idx) =>
-                q.answer ? (
-                  <li
-                    key={idx}
-                    style={{
-                      fontSize: 13.5,
-                      color: '#374151',
-                      marginBottom: 10,
-                      lineHeight: '1.65',
-                      fontFamily: '"Times New Roman", Times, serif',
-                    }}
-                  >
-                    {idx + 1}.&nbsp;{q.answer}
-                  </li>
-                ) : null
-              )}
+              {paper.answerKey.map((ans, idx) => (
+                <li
+                  key={idx}
+                  style={{
+                    fontSize: 13.5,
+                    color: '#374151',
+                    marginBottom: 10,
+                    lineHeight: '1.65',
+                    fontFamily: '"Times New Roman", Times, serif',
+                  }}
+                >
+                  {ans}
+                </li>
+              ))}
             </ol>
           </div>
         )}

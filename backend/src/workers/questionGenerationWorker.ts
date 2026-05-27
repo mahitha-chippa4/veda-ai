@@ -16,6 +16,13 @@ export function startQuestionGenerationWorker(): Worker {
     broadcastToAssignment(assignmentId, 'generation_started', { progress: 5, message: 'Starting generation...' });
     await setJobProgress(assignmentId, { jobId: job.id!, assignmentId, status: 'processing', progress: 5, message: 'Starting generation...' });
 
+    const assignmentCheck = await Assignment.findById(assignmentId);
+    if (!assignmentCheck) throw new Error(`Assignment ${assignmentId} not found`);
+    if (assignmentCheck.status === 'completed' || assignmentCheck.status === 'processing') {
+      console.log(`Assignment ${assignmentId} is already ${assignmentCheck.status}. Skipping generation.`);
+      return { assignmentId, success: true, skipped: true };
+    }
+
     // Update assignment status
     const assignment = await Assignment.findByIdAndUpdate(
       assignmentId,
@@ -64,7 +71,10 @@ export function startQuestionGenerationWorker(): Worker {
       schoolName: (paperData as any).schoolName || assignment.schoolName || '',
       totalMarks: paperData.totalMarks,
       duration: paperData.duration,
-      sections: paperData.sections,
+      mcqs: paperData.mcqs,
+      shortQuestions: paperData.shortQuestions,
+      longQuestions: paperData.longQuestions,
+      answerKey: paperData.answerKey,
     });
     await paper.save();
 

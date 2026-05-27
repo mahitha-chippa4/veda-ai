@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { Section } from '../types';
+import { Question } from '../types';
 
 export interface IGeneratedPaper extends Document {
   assignmentId: mongoose.Types.ObjectId;
@@ -9,7 +9,10 @@ export interface IGeneratedPaper extends Document {
   schoolName?: string;
   totalMarks?: number;
   duration?: string;
-  sections: Section[];
+  mcqs: Question[];
+  shortQuestions: Question[];
+  longQuestions: Question[];
+  answerKey: string[];
   pdfUrl?: string;
   version: number;
   userId: mongoose.Types.ObjectId;
@@ -26,12 +29,6 @@ const QuestionSchema = new Schema({
   answer: String,
 }, { _id: false });
 
-const SectionSchema = new Schema({
-  title: { type: String, required: true },
-  instruction: { type: String, default: '' },
-  questions: [QuestionSchema],
-}, { _id: false });
-
 const GeneratedPaperSchema = new Schema<IGeneratedPaper>({
   assignmentId: { type: Schema.Types.ObjectId, ref: 'Assignment', required: true, index: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -41,7 +38,10 @@ const GeneratedPaperSchema = new Schema<IGeneratedPaper>({
   schoolName: String,
   totalMarks: Number,
   duration: String,
-  sections: [SectionSchema],
+  mcqs: [QuestionSchema],
+  shortQuestions: [QuestionSchema],
+  longQuestions: [QuestionSchema],
+  answerKey: [String],
   pdfUrl: String,
   version: { type: Number, default: 1 },
   generatedAt: { type: Date, default: Date.now },
