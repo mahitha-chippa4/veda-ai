@@ -5,6 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Wrench, BookOpen, CheckSquare, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import api from '@/services/api';
 
 export default function ToolkitPage() {
   const [activeTool, setActiveTool] = useState<string | null>(null);
@@ -25,20 +26,16 @@ export default function ToolkitPage() {
     setResult(null);
 
     try {
-      const res = await fetch('http://localhost:4000/api/toolkit/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ toolType: activeTool, topic, class: className, additionalContext: context }),
+      const { data } = await api.post('/toolkit/generate', {
+        toolType: activeTool,
+        topic,
+        class: className,
+        additionalContext: context
       });
-      const data = await res.json();
-      if (res.ok) {
-        setResult(data.result);
-      } else {
-        setError(data.error || 'Failed to generate');
-      }
-    } catch (err) {
+      setResult(data.result);
+    } catch (err: any) {
       console.error(err);
-      setError('Network error');
+      setError(err.message || 'Network error');
     } finally {
       setLoading(false);
     }
