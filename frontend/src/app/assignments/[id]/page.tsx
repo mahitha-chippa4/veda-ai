@@ -43,15 +43,18 @@ export default function AssignmentDetailPage() {
         setAssignment(data);
 
         if (data.status === 'completed') {
-          setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready' });
           if (!cachedPaper) {
             try {
               const p = await assignmentApi.getPaper(id);
               if (isMounted) {
                 setPaper(id, p);
-                setGenerationState(id, { paper: p });
+                setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready', paper: p });
               }
-            } catch {}
+            } catch (err) {
+              if (isMounted) setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready' });
+            }
+          } else {
+            setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready' });
           }
         } else if (data.status === 'processing') {
           setGenerationState(id, { status: 'processing', progress: 45, message: 'Generating questions with AI...' });
@@ -98,14 +101,20 @@ export default function AssignmentDetailPage() {
         
         if (data.status === 'completed') {
           console.log("Paper generation completed");
-          setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready' });
           
           if (!getPaper(id)) {
-            const p = await assignmentApi.getPaper(id);
-            if (isMounted) {
-              setPaper(id, p);
-              setGenerationState(id, { paper: p });
+            try {
+              const p = await assignmentApi.getPaper(id);
+              if (isMounted) {
+                setPaper(id, p);
+                setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready', paper: p });
+              }
+            } catch (err) {
+              console.error("Failed to fetch paper after completion", err);
+              if (isMounted) setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready' });
             }
+          } else {
+            setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready' });
           }
         } else if (data.status === 'failed') {
           setGenerationState(id, { status: 'failed', progress: 0, message: 'Generation failed', error: data.errorMessage });
