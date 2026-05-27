@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+
+  /* Brand */
+  --color-brand-orange: #FF5A1F;
+  --color-brand-orange-light: #FFF0EB;
+  --color-brand-orange-dark: #E04A14;
+
+  /* Neutrals */
+  --color-ink: #1A1A1A;
+  --color-ink-secondary: #374151;
+  --color-ink-muted: #6B7280;
+  --color-ink-faint: #9CA3AF;
+  --color-ink-placeholder: #D1D5DB;
+
+  /* Surfaces */
+  --color-bg-page: #F4F5F7;
+  --color-bg-sidebar: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-header: #FFFFFF;
+
+  /* Borders */
+  --color-border: #E5E7EB;
+  --color-border-subtle: #F3F4F6;
+
+  /* Status */
+  --color-easy-bg: #DCFCE7;
+  --color-easy-text: #16A34A;
+  --color-medium-bg: #FEF9C3;
+  --color-medium-text: #CA8A04;
+  --color-hard-bg: #FEE2E2;
+  --color-hard-text: #DC2626;
+
+  /* Sidebar active */
+  --color-sidebar-active-bg: #F3F4F6;
+  --color-sidebar-active-text: #1A1A1A;
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F4F5F7;
+  color: #1A1A1A;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+/* Focus */
+input:focus, textarea:focus, select:focus { outline: none; }
+
+/* Selection */
+::selection { background-color: rgba(255,90,31,0.15); }
+
+/* Print */
+@media print {
+  .no-print { display: none !important; }
+  .sidebar { display: none !important; }
+  header { display: none !important; }
+  body { background: white; }
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: calc(400px + 100%) 0; }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.9); opacity: 0.7; }
+  50%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-pulse { animation: pulse-ring 2s ease-in-out infinite; }
+.animate-fade-up { animation: fade-up 0.3s ease forwards; }
+
+/* ─── Skeleton ───────────────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ─── Component Classes ──────────────────────────────────────────────────────── */
+
+/* Sidebar nav item */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.nav-item:hover {
+  background-color: #F9FAFB;
+  color: #1A1A1A;
+}
+.nav-item.active {
+  background-color: #F3F4F6;
+  color: #1A1A1A;
+  font-weight: 600;
+}
+
+/* Input */
+.input-field {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #1A1A1A;
+  background: #FFFFFF;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 10px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.input-field::placeholder { color: #9CA3AF; }
+.input-field:focus {
+  border-color: #FF5A1F;
+  box-shadow: 0 0 0 3px rgba(255,90,31,0.12);
+}
+
+/* Label */
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+/* Card */
+.card {
+  background: #FFFFFF;
+  border-radius: 14px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Exam paper card - slightly different */
+.paper-card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
