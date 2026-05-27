@@ -48,7 +48,7 @@ Return ONLY JSON matching exactly:
 
 export async function generateExamPaper(input: GenerationInput): Promise<GeneratedPaperData> {
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.7,
