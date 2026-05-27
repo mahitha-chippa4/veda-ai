@@ -17,7 +17,7 @@ router.post('/generate', async (req: AuthRequest, res: Response) => {
     }
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
+      model: 'gemini-2.0-flash',
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 8192,

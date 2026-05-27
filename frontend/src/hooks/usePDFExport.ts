@@ -93,10 +93,12 @@ export function usePDFExport() {
 
       // ── Sections ─────────────────────────────────────────────────────────────
       let globalQuestionNum = 0;
+      let sectionIndex = 0;
 
-      for (let si = 0; si < paper.sections.length; si++) {
-        const section = paper.sections[si];
-        const sectionLetter = String.fromCharCode(65 + si);
+      const renderSectionToPDF = (title: string, questions: Question[], instruction?: string) => {
+        if (!questions || questions.length === 0) return;
+        const sectionLetter = String.fromCharCode(65 + sectionIndex);
+        sectionIndex++;
 
         checkNewPage(22);
 
@@ -106,21 +108,21 @@ export function usePDFExport() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10.5);
         doc.setTextColor(255, 255, 255);
-        doc.text(`SECTION ${sectionLetter} — ${section.title.toUpperCase()}`, margin, y + 9);
+        doc.text(`SECTION ${sectionLetter} — ${title.toUpperCase()}`, margin, y + 9);
         y += 17;
 
-        if (section.instruction) {
+        if (instruction) {
           doc.setFont('helvetica', 'italic');
           doc.setFontSize(8.5);
           doc.setTextColor(107, 114, 128);
-          const instrLines = doc.splitTextToSize(section.instruction, contentWidth);
+          const instrLines = doc.splitTextToSize(instruction, contentWidth);
           doc.text(instrLines, margin, y);
           y += instrLines.length * 4.5 + 3;
         }
 
         // ── Questions ──────────────────────────────────────────────────────────
-        for (let qi = 0; qi < section.questions.length; qi++) {
-          const q = section.questions[qi];
+        for (let qi = 0; qi < questions.length; qi++) {
+          const q = questions[qi];
           globalQuestionNum++;
 
           const qText = `${globalQuestionNum}. ${q.question}`;
@@ -212,7 +214,11 @@ export function usePDFExport() {
         }
 
         y += 4;
-      }
+      };
+
+      renderSectionToPDF('Multiple Choice Questions', paper.mcqs || []);
+      renderSectionToPDF('Short Answer Questions', paper.shortQuestions || []);
+      renderSectionToPDF('Long Answer Questions', paper.longQuestions || []);
 
       // End of paper marker
       checkNewPage(10);
@@ -223,8 +229,7 @@ export function usePDFExport() {
       y += 12;
 
       // ── Answer Key ────────────────────────────────────────────────────────────
-      const allQuestions = paper.sections.flatMap((s) => s.questions);
-      if (allQuestions.some((q) => q.answer)) {
+      if (paper.answerKey && paper.answerKey.length > 0) {
         doc.addPage();
         y = margin;
 
@@ -236,10 +241,10 @@ export function usePDFExport() {
         doc.text('ANSWER KEY', margin, y + 6);
         y += 20;
 
-        allQuestions.forEach((q, idx) => {
-          if (!q.answer) return;
+        paper.answerKey.forEach((ans, idx) => {
+          if (!ans) return;
           checkNewPage(14);
-          const ansLines = doc.splitTextToSize(`${idx + 1}. ${q.answer}`, contentWidth - 6);
+          const ansLines = doc.splitTextToSize(ans, contentWidth - 6);
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(9.5);
           doc.setTextColor(55, 65, 81);

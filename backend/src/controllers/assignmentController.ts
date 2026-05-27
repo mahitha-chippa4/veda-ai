@@ -24,6 +24,21 @@ export async function createAssignment(req: AuthRequest, res: Response, next: Ne
     };
     const settingsHash = crypto.createHash('sha256').update(JSON.stringify(hashData)).digest('hex');
 
+    if (!syllabusFile) {
+      const existingAssignment = await Assignment.findOne({ settingsHash });
+      if (existingAssignment) {
+        if (existingAssignment.status === 'completed' || existingAssignment.status === 'processing' || existingAssignment.status === 'pending') {
+          return res.status(200).json({
+            success: true,
+            data: {
+              assignment: existingAssignment,
+              jobId: existingAssignment.jobId || null,
+            },
+          });
+        }
+      }
+    }
+
     const assignment = new Assignment({
       title,
       class: className,
@@ -42,43 +57,10 @@ export async function createAssignment(req: AuthRequest, res: Response, next: Ne
 
     await assignment.save();
 
-    // Check for cached paper
-    const existingAssignment = await Assignment.findOne({ settingsHash, status: 'completed' });
-    if (existingAssignment && !syllabusFile) { // only use cache if no new custom syllabus file
-      const existingPaper = await GeneratedPaper.findOne({ assignmentId: existingAssignment._id });
-      if (existingPaper) {
-        const newPaper = new GeneratedPaper({
-          assignmentId: assignment._id,
-          userId: req.user?.id,
-          title: existingPaper.title,
-          subject: existingPaper.subject,
-          class: existingPaper.class,
-          schoolName: assignment.schoolName || existingPaper.schoolName,
-          totalMarks: existingPaper.totalMarks,
-          duration: existingPaper.duration,
-          mcqs: existingPaper.mcqs,
-          shortQuestions: existingPaper.shortQuestions,
-          longQuestions: existingPaper.longQuestions,
-          answerKey: existingPaper.answerKey,
-        });
-        await newPaper.save();
-
-        assignment.status = 'completed';
-        await assignment.save();
-
-        return res.status(201).json({
-          success: true,
-          data: {
-            assignment,
-            jobId: null,
-          },
-        });
-      }
-    }
-
     // Enqueue question generation job
     const job = await questionQueue.add('generate', { assignmentId: assignment._id.toString() }, {
       jobId: `gen-${assignment._id}`,
+      attempts: 1,
     });
 
     assignment.jobId = job.id;
@@ -153,6 +135,7 @@ export async function regenerateAssignment(req: AuthRequest, res: Response, next
     // Re-enqueue
     const job = await questionQueue.add('generate', { assignmentId: id }, {
       jobId: `regen-${id}-${Date.now()}`,
+      attempts: 1,
     });
 
     res.json({ success: true, data: { jobId: job.id } });

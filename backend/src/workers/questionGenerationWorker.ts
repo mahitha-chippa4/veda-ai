@@ -42,6 +42,7 @@ export function startQuestionGenerationWorker(): Worker {
     broadcastToAssignment(assignmentId, 'generation_progress', { progress: 40, message: 'Generating questions with AI...' });
     await setJobProgress(assignmentId, { jobId: job.id!, assignmentId, status: 'processing', progress: 40, message: 'Generating questions with AI...' });
 
+    console.log("Gemini API CALLED for Assignment:", assignmentId);
     const paperData = await generateExamPaper({
       title: assignment.title,
       subject: assignment.subject,

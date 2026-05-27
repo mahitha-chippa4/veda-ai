@@ -21,79 +21,34 @@ function buildPrompt(input: GenerationInput): string {
   const totalMarks = input.questionTypes.reduce((sum, qt) => sum + qt.count * qt.marks, 0);
   const questionSummary = input.questionTypes
 
-  return `You are an expert educational assessment creator for Indian schools. Generate a comprehensive exam paper in valid JSON format.
-
-IMPORTANT FALLBACK INSTRUCTION:
-If a reference syllabus document is attached, attempt to use it as the primary source of context. 
-HOWEVER, if the document is empty, unreadable, irrelevant, or fails to parse, YOU MUST IGNORING IT and generate the paper FROM SCRATCH using your extensive knowledge of the specified subject, class, and chapters. Do not return an error or refuse to generate.
-
-Details:
+  return `Generate a JSON exam paper for Indian schools.
 Title: ${input.title}
-School/Institution: ${input.schoolName || 'VedaAI School'}
-Class: ${input.class}
-Subject: ${input.subject}
-Chapters/Topics: ${input.chapters.join(', ') || 'General'}
+Subject: ${input.subject} (${input.class})
+Chapters: ${input.chapters.join(', ')}
 Total Marks: ${totalMarks}
-Due Date: ${input.dueDate || 'Not specified'}
+Question Breakdown: ${input.questionTypes.map(qt => `${qt.type}: ${qt.count} q (${qt.marks}m/each)`).join(', ')}
+Extra Instructions: ${input.additionalInstructions || 'None'}
 
-Question Distribution:
-${input.questionTypes.map(qt => `- ${qt.type}: ${qt.count} questions (${qt.marks} marks each)`).join('\n')}
+Use the attached syllabus if relevant. If unreadable, generate from scratch. Ensure 40% easy, 40% medium, 20% hard.
 
-Instructions:
-${input.additionalInstructions || 'None'}
-
-Syllabus Content (may be corrupted or unreadable):
-See attached document if provided.
-
-Generate a complete exam paper with EXACTLY the number and type of questions specified. Each question must:
-1. Be clearly related to ${input.subject} and the specified chapters
-2. Have appropriate difficulty (distribute roughly 40% easy, 40% medium, 20% hard)
-3. For MCQ: include exactly 4 options array with format ["A. option1", "B. option2", "C. option3", "D. option4"]
-4. Be educationally sound and age-appropriate for ${input.class}
-5. difficulty must be exactly one of: "easy", "medium", "hard" (lowercase)
-
-Return ONLY valid JSON (no markdown, no explanation) matching this exact schema:
+Return ONLY JSON matching exactly:
 {
   "title": "${input.title}",
-  "schoolName": "${input.schoolName || 'VedaAI School'}",
+  "schoolName": "${input.schoolName || 'VedaAI'}",
   "subject": "${input.subject}",
   "class": "${input.class}",
   "totalMarks": ${totalMarks},
-  "duration": "suggested duration in minutes",
-  "mcqs": [
-    {
-      "question": "question text",
-      "type": "MCQ",
-      "difficulty": "easy|medium|hard",
-      "marks": number,
-      "options": ["A. option1", "B. option2", "C. option3", "D. option4"]
-    }
-  ],
-  "shortQuestions": [
-    {
-      "question": "question text",
-      "type": "ShortAnswer",
-      "difficulty": "easy|medium|hard",
-      "marks": number
-    }
-  ],
-  "longQuestions": [
-    {
-      "question": "question text",
-      "type": "Descriptive",
-      "difficulty": "easy|medium|hard",
-      "marks": number
-    }
-  ],
-  "answerKey": ["1. correct answer", "2. model answer", "3. detailed explanation"]
-}
-
-Ensure the answerKey array contains the answers for ALL questions in the paper, in the exact order they appear.`;
+  "duration": "e.g. 120 mins",
+  "mcqs": [{ "question": "...", "type": "MCQ", "difficulty": "easy|medium|hard", "marks": 0, "options": ["A.", "B.", "C.", "D."] }],
+  "shortQuestions": [{ "question": "...", "type": "ShortAnswer", "difficulty": "easy|medium|hard", "marks": 0 }],
+  "longQuestions": [{ "question": "...", "type": "Descriptive", "difficulty": "easy|medium|hard", "marks": 0 }],
+  "answerKey": ["1. answer", "2. answer"]
+}`;
 }
 
 export async function generateExamPaper(input: GenerationInput): Promise<GeneratedPaperData> {
   const model = genAI.getGenerativeModel({
-    model: 'gemini-flash-latest',
+    model: 'gemini-2.0-flash',
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.7,
