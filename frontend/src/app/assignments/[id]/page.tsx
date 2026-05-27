@@ -33,10 +33,13 @@ export default function AssignmentDetailPage() {
   const paper = cachedPaper || genState.paper;
 
   useEffect(() => {
+    let isMounted = true;
     const load = async () => {
       setIsLoading(true);
       try {
         const data = await assignmentApi.getById(id);
+        if (!isMounted) return;
+
         setAssignment(data);
 
         if (data.status === 'completed') {
@@ -44,8 +47,10 @@ export default function AssignmentDetailPage() {
           if (!cachedPaper) {
             try {
               const p = await assignmentApi.getPaper(id);
-              setPaper(id, p);
-              setGenerationState(id, { paper: p });
+              if (isMounted) {
+                setPaper(id, p);
+                setGenerationState(id, { paper: p });
+              }
             } catch {}
           }
         } else if (data.status === 'processing') {
@@ -58,11 +63,80 @@ export default function AssignmentDetailPage() {
       } catch (err) {
         console.error('Load failed:', err);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
     load();
-  }, [id]);
+
+    return () => { isMounted = false; };
+  }, [id, cachedPaper, setGenerationState, setPaper]);
+
+  // Polling fallback mechanism
+  useEffect(() => {
+    let pollTimer: NodeJS.Timeout;
+    let isMounted = true;
+    let pollCount = 0;
+    const MAX_POLLS = 40; // max 40 polls * 3s = 120s
+
+    const pollStatus = async () => {
+      if (!isMounted) return;
+      
+      const currentGenState = getGenerationState(id);
+      if (currentGenState.status === 'completed' || currentGenState.status === 'failed') {
+        return; // stop polling
+      }
+
+      if (pollCount >= MAX_POLLS) {
+        setGenerationState(id, { status: 'failed', progress: 0, message: 'Generation timed out', error: 'The request took too long. Please try regenerating.' });
+        return;
+      }
+
+      console.log("Polling assignment status...");
+      try {
+        const data = await assignmentApi.getById(id);
+        if (!isMounted) return;
+        
+        if (data.status === 'completed') {
+          console.log("Paper generation completed");
+          setGenerationState(id, { status: 'completed', progress: 100, message: 'Paper ready' });
+          
+          if (!getPaper(id)) {
+            const p = await assignmentApi.getPaper(id);
+            if (isMounted) {
+              setPaper(id, p);
+              setGenerationState(id, { paper: p });
+            }
+          }
+        } else if (data.status === 'failed') {
+          setGenerationState(id, { status: 'failed', progress: 0, message: 'Generation failed', error: data.errorMessage });
+        } else {
+          // Still processing, update progress UX
+          pollCount++;
+          let newProgress = currentGenState.progress || 10;
+          let newMessage = currentGenState.message || 'Generating questions with AI...';
+          
+          if (newProgress < 90) newProgress += 5;
+          if (pollCount >= 5) newMessage = 'Almost done...'; // after 15 seconds
+
+          setGenerationState(id, { status: 'processing', progress: newProgress, message: newMessage });
+          pollTimer = setTimeout(pollStatus, 3000);
+        }
+      } catch (err) {
+        console.error('Poll failed:', err);
+        // Retry polling on error to handle intermittent network drops
+        if (isMounted) pollTimer = setTimeout(pollStatus, 5000);
+      }
+    };
+
+    if (genState.status === 'processing' || genState.status === 'pending') {
+      pollTimer = setTimeout(pollStatus, 3000);
+    }
+
+    return () => {
+      isMounted = false;
+      if (pollTimer) clearTimeout(pollTimer);
+    };
+  }, [id, genState.status, getGenerationState, setGenerationState, getPaper, setPaper]);
 
   const handleRegenerate = async () => {
     if (!window.confirm('Regenerate paper? The current paper will be replaced.')) return;
